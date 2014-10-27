@@ -57,5 +57,55 @@ $.extend($.fn.datagrid.methods, {
                 });
             });
         });
-    }
+    },
+    cascadingMergeEqualCells: function(jq, fields) {
+        // 参数处理
+        if (!fields) {
+            throw "field is not designated";
+        }
+
+        if (typeof fields === "string") {
+            fields = [fields];
+        }
+
+        return jq.each(function() {
+            var self = $(this),
+                rows = self.datagrid("getRows"),
+                lastIndex = rows.length - 1,
+                previousJoinedValue = null,
+                startIndex = -1;
+
+            // 遍历行数据，寻找相同的列值
+            $.each(rows, function(rowIndex, row) {
+                var currentJoinedValue = $.map(fields, function(fieldName) {
+                    return row[fieldName];
+                }).join("-");
+
+                if (currentJoinedValue !== previousJoinedValue) {
+                    if (startIndex < (rowIndex - 1)) {
+                        $.each(fields, function(i, fieldName) {
+                            self.datagrid("mergeCells", {
+                                index: startIndex,
+                                field: fieldName,
+                                rowspan: rowIndex - startIndex
+                            });
+                        });
+                    }
+
+                    previousJoinedValue = currentJoinedValue;
+                    startIndex = rowIndex;
+                } else {
+                    if (rowIndex === lastIndex) {
+                        $.each(fields, function(i, fieldName) {
+                            self.datagrid("mergeCells", {
+                                index: startIndex,
+                                field: fieldName,
+                                rowspan: rowIndex + 1 - startIndex
+                            });
+                        });
+                    }
+                }
+            });
+        });
+    }    
 });
